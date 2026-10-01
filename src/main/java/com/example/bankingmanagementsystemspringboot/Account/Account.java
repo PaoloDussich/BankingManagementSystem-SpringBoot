@@ -1,74 +1,89 @@
 package com.example.bankingmanagementsystemspringboot.Account;
 
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+
 import java.util.Objects;
 
+
+@Entity
 public class Account {
-    private String AccountNumber;
-    private String PinHash;
-    private String FullName;
-    private String Phone;
-    private double Balance;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+    private String accountNumber;
+    private String pinHash;
+    private String fullName;
+    private String phone;
+    private double balance;
 
 
     public Account(){
 
     }
 
+    public Integer getId(){
+        return id;
+    }
+
     public String getAccountNumber() {
-        return AccountNumber;
+        return accountNumber;
     }
 
     public void setAccountNumber(String accountNumber) {
-        AccountNumber = accountNumber;
+        this.accountNumber = accountNumber;
     }
 
     public String getPinHash() {
-        return PinHash;
+        return pinHash;
     }
 
     public void setPinHash(String pinHash) {
-        PinHash = pinHash;
+        this.pinHash = pinHash;
     }
 
     public String getFullName() {
-        return FullName;
+        return fullName;
     }
 
     public void setFullName(String fullName) {
-        FullName = fullName;
+        this.fullName = fullName;
     }
 
     public String getPhone() {
-        return Phone;
+        return phone;
     }
 
     public void setPhone(String phone) {
-        Phone = phone;
+        this.phone = phone;
     }
 
     public double getBalance() {
-        return Balance;
+        return balance;
     }
 
     public void setBalance(double balance) {
-        Balance = balance;
+        this.balance = balance;
     }
 
     public boolean credit(double amount){
         if (amount <=0){
             return false;
         }
-        Balance += amount;
+        balance += amount;
         return true;
     }
 
     public boolean debit(double amount){
-        if(amount <= 0 || amount > Balance){
+        if(amount <= 0 || amount > balance){
             return false;
         }
 
-        Balance -= amount;
+        balance -= amount;
         return true;
     }
 
@@ -78,12 +93,12 @@ public class Account {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Account account = (Account) o;
-        return Double.compare(Balance, account.Balance) == 0 && Objects.equals(AccountNumber, account.AccountNumber) && Objects.equals(PinHash, account.PinHash) && Objects.equals(FullName, account.FullName) && Objects.equals(Phone, account.Phone);
+        return Double.compare(balance, account.balance) == 0 && Objects.equals(accountNumber, account.accountNumber) && Objects.equals(pinHash, account.pinHash) && Objects.equals(fullName, account.fullName) && Objects.equals(phone, account.phone);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(AccountNumber, PinHash, FullName, Phone, Balance);
+        return Objects.hash(accountNumber, pinHash, fullName, phone, balance);
     }
 }
 

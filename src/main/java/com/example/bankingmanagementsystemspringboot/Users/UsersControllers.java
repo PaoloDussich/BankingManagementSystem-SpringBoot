@@ -1,7 +1,6 @@
 package com.example.bankingmanagementsystemspringboot.Users;
 
 
-import org.apache.catalina.User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;

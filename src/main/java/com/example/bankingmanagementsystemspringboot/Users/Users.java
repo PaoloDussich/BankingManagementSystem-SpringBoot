@@ -12,7 +12,7 @@ import java.util.Objects;
 import java.util.Set;
 
 
-@JsonPropertyOrder({"id", "userName", "passowordHash", "role", "permissions", "accountNumber", "locked", "faildeAtemps"})
+@JsonPropertyOrder({"id", "userName", "passoword", "role", "permissions", "accountNumber", "locked", "faildeAtemps"})
 @Entity
 public class Users {
 

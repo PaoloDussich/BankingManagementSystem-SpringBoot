@@ -77,6 +77,8 @@ public class UserServices {
 
     }
 
+
+
     public void deleteUsers(Integer id) {
         Users user = usersRepository.findById(id).orElse(null);
         usersRepository.delete(user);

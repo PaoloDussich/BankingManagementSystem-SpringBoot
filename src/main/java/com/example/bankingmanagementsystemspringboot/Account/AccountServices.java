@@ -3,89 +3,78 @@ package com.example.bankingmanagementsystemspringboot.Account;
 import com.example.bankingmanagementsystemspringboot.Users.Users;
 import com.example.bankingmanagementsystemspringboot.Users.UsersRepository;
 
-import java.util.ArrayList;
-import java.util.Random;
+import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+
+
+
+@Service
 public class AccountServices {
 
     private final AccountRepository accountRepository;
-    private final Random random = new Random();
+    private final UsersRepository usersRepository;
 
-    public AccountServices(AccountRepository accountRepository) {
+
+    public AccountServices(AccountRepository accountRepository, UsersRepository usersRepository) {
         this.accountRepository = accountRepository;
+        this.usersRepository = usersRepository;
     }
 
 
-    public int randomNumber() {
-        return random.nextInt(10000);
-    }
+    public String createAccountServices(Account account, Integer id ) {
 
-    public String generatorAccountNumber() {
-        String accountNumber;
+        //este es el usurio con ese id
+        Users users = usersRepository.findById(id).orElse(null);
 
-        do {
-            accountNumber = "ACC" + randomNumber();
-
-        } while (accountRepository.findByAccountNumber(accountNumber) != null);
-        return accountNumber;
-
-    }
-
-
-    public String createAccountServices(String pinHash, String userName, String phoneNumber, double balance) {
-        Account account = new Account();
-
-        String accountNumber = generatorAccountNumber();
-
-        Users user = UsersRepository.find(userName);
-
-        if (user == null) {
-
-            return "User does not exist.";
+        if (users ==null){
+            return "User doesn't exits";
         }
 
+        String accountNumber = "ACC"+users.getId();
 
-        user.setAccountNumber(accountNumber);
-        accountRepository.save(userName, accountNumber, '6');
+        users.setAccountNumber(accountNumber);
+        usersRepository.save(users);
 
-        pinHash = Utils.hashSha(pinHash);
+        account.setFullName(users.getUserName());
 
         account.setAccountNumber(accountNumber);
-        account.setPinHash(pinHash);
-        account.setFullName(userName);
-        account.setPhone(phoneNumber);
-        account.setBalance(balance);
 
-        fileRepository.writeAccountFile(account);
-
+        accountRepository.save(account);
         return "Account created successfully.";
     }
 
 
     public Account findAccount(String accountNumber) {
 
-        return fileRepository.findAccount(accountNumber);
+        return accountRepository.findByAccountNumber(accountNumber);
 
     }
 
     public ArrayList<Account> showAccountList() {
-        return fileRepository.showAccountList();
+        return new ArrayList<>(accountRepository.findAll());
 
     }
 
-    public void deletedAccount(String userName) {
-        fileRepository.deleteAccount(userName);
-
+    public void deletedAccount(String accountNumber) {
+        Account account = accountRepository.findByAccountNumber(accountNumber);
+        accountRepository.delete(account);
     }
 
 
-    public void updateAccount(String userAccount, String newPin, char updateOption) {
+    public void updateAccount(String accountNumber, Account accounts) {
 
-        if (updateOption == '2') {
-            newPin = Utils.hashSha(newPin);
+        Account account = accountRepository.findByAccountNumber(accountNumber);
+
+        if (account == null){
+            return;
         }
 
-        fileRepository.updateAccount(userAccount, newPin, updateOption);
+        
+        account.setPhone(accounts.getPhone());
+        account.setPinHash(accounts.getPinHash());
+
+        accountRepository.save(account);
     }
 
 

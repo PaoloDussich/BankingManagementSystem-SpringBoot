@@ -4,6 +4,7 @@ import com.example.bankingmanagementsystemspringboot.Users.Users;
 import com.example.bankingmanagementsystemspringboot.Users.UsersRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 
@@ -21,14 +22,18 @@ public class AccountServices {
         this.usersRepository = usersRepository;
     }
 
-
+@Transactional
     public String createAccountServices(Account account, Integer id ) {
 
         //este es el usurio con ese id
         Users users = usersRepository.findById(id).orElse(null);
 
         if (users ==null){
-            return "User doesn't exits";
+            return "User doesn't exist";
+        }
+
+        if (users.getAccountNumber() != null) {
+            return "User already has an account";
         }
 
         String accountNumber = "ACC"+users.getId();
@@ -41,7 +46,7 @@ public class AccountServices {
         account.setAccountNumber(accountNumber);
 
         accountRepository.save(account);
-        return "Account created successfully.";
+        return "Account created successfully";
     }
 
 
@@ -56,25 +61,34 @@ public class AccountServices {
 
     }
 
-    public void deletedAccount(String accountNumber) {
-        Account account = accountRepository.findByAccountNumber(accountNumber);
+    public String deletedAccount(Integer id ) {
+        Account account = accountRepository.findById(id).orElse(null);
+
+
+        if (account == null) {
+            return "Account doesn't exist";
+        }
+
         accountRepository.delete(account);
+        return "Account deleted successfully ";
     }
 
 
-    public void updateAccount(String accountNumber, Account accounts) {
+    public String updateAccount(Integer id, Account accounts) {
 
-        Account account = accountRepository.findByAccountNumber(accountNumber);
+        Account account = accountRepository.findById(id).orElse(null);
 
         if (account == null){
-            return;
+            return "Account doesn't exist";
         }
 
-        
+
         account.setPhone(accounts.getPhone());
         account.setPinHash(accounts.getPinHash());
 
         accountRepository.save(account);
+        return "Account updated successfully ";
+
     }
 
 

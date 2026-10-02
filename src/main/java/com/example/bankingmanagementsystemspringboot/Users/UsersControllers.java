@@ -1,6 +1,7 @@
 package com.example.bankingmanagementsystemspringboot.Users;
 
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -16,32 +17,43 @@ public class UsersControllers {
     }
 
     @PostMapping
-    public void createUser(@RequestBody Users user) {
-        userServices.createUser(user);
+    public String createUser(@RequestBody Users user) {
+     return    userServices.createUser(user);
 
     }
 
 
     //lista completa
     @GetMapping
-    public ArrayList<Users> mostarListaCompleta() {
-        return userServices.showUserList();
+    public ResponseEntity<ArrayList<Users>> showList() {
+        return ResponseEntity.ok(userServices.showUserList());
     }
+
 
     //buscar por id
     @GetMapping("/{id}")
-    public Users mostarUsuarioPorId(@PathVariable Integer id) {
-        return userServices.findUser(id);
+    public ResponseEntity<Users> showUserForId(@PathVariable Integer id) {
+
+        Users user = userServices.findUser(id);
+
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(user);
     }
+
 
     @DeleteMapping("/{id}")
-    public void eliminarUser(@PathVariable Integer id) {
-        userServices.deleteUsers(id);
+    public String deleteUser(@PathVariable Integer id) {
+        return userServices.deleteUsers(id);
     }
 
+
+
     @PutMapping("/{id}")
-    public void modificarUser(@PathVariable Integer id ,@RequestBody Users users) {
-        userServices.updateUser(id, users);
+    public String updateUser(@PathVariable Integer id, @RequestBody Users users) {
+        return userServices.updateUser(id, users);
     }
 
 

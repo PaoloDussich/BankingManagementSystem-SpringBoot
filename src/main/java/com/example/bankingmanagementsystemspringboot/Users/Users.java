@@ -2,18 +2,14 @@
 package com.example.bankingmanagementsystemspringboot.Users;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
 
-@JsonPropertyOrder({"id", "userName", "passoword", "role", "permissions", "accountNumber", "locked", "faildeAtemps"})
-@Entity
+@JsonPropertyOrder({"id", "userName", "passowordHash", "role", "permissions", "accountNumber", "locked", "faildeAtemps"})@Entity
 public class Users {
 
     @Id
@@ -22,8 +18,15 @@ public class Users {
 
     private String userName;
     private String passowordHash;
+
+    @Enumerated(EnumType.STRING)
     private Role role;
+
+    @ElementCollection
+    @Enumerated(EnumType.STRING)
     private Set<Permissions> permissions = new HashSet<>();
+
+
     private String accountNumber;
     private boolean isLocked = false;
     private int faildeAtemps;
@@ -116,6 +119,7 @@ public class Users {
 
     public void setRole(Role data) {
         this.role = data;
+        permissions.clear();
         setDefaultPermissions();
     }
 
@@ -136,15 +140,7 @@ public class Users {
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                userName,
-                passowordHash,
-                role,
-                permissions,
-                accountNumber,
-                isLocked,
-                faildeAtemps
-        );
+        return Objects.hash(userName, passowordHash, role, permissions, accountNumber, isLocked, faildeAtemps);
     }
 }
 

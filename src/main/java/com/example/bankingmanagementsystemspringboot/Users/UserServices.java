@@ -1,9 +1,9 @@
 package com.example.bankingmanagementsystemspringboot.Users;
-
-import com.example.bankingmanagementsystemspringboot.SessionContext;
+import com.example.bankingmanagementsystemspringboot.Account.Account;
+import com.example.bankingmanagementsystemspringboot.Account.AccountRepository;
 import com.example.bankingmanagementsystemspringboot.Utils;
-import jakarta.persistence.Id;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 
@@ -11,20 +11,18 @@ import java.util.ArrayList;
 public class UserServices {
 
     private UsersRepository usersRepository;
+    private AccountRepository accountRepository;
 
-    public UserServices(UsersRepository usersRepository) {
+    public UserServices(UsersRepository usersRepository, AccountRepository accountRepository) {
         this.usersRepository = usersRepository;
+        this.accountRepository= accountRepository;
     }
 
-    public void createUser(Users users) {
+    public String createUser(Users users) {
 
-
-        users.setUserName(users.getUserName());
         users.setPassowordHash(Utils.hashSha(users.getPassowordHash()));
-        users.setDefaultPermissions();
-
-        //fileRepository.writeFile(user);,
         usersRepository.save(users);
+        return "User created successfully";
 
     }
 
@@ -33,99 +31,39 @@ public class UserServices {
         return usersRepository.findById(id).orElse(null);
     }
 
-    public String validateUsers(String userName, String password) {
-        //Users user = fileRepository.findUsers(userName);
-
-        Users user = usersRepository.findByUserName(userName);
-
-
-        password = Utils.hashSha(password);
+@Transactional
+    public String deleteUsers(Integer id) {
+        Users user = usersRepository.findById(id).orElse(null);
 
         if (user == null) {
-            return "Users not found";
+            return "User doesn't exist";
         }
 
-        if (user.isLocked()) {
-            return "Locked";
-        }
+        if (user.getAccountNumber() != null) {
+            Account account = accountRepository.findByAccountNumber(user.getAccountNumber());
 
-
-        if (user.getPassowordHash().equals(password)) {
-            user.resetFailedAttemps();
-            //fileRepository.updateUsers(userName, "0", '5');
-            usersRepository.save(user);
-
-            SessionContext.logIn(user);
-
-            return "Login Success";
-
-        } else {
-
-            user.incraseFailedAttemps();
-            usersRepository.save(user);
-
-
-            if (user.getFaildeAtemps() == 3) {
-                user.lock();
-
-                usersRepository.save(user);
-
+            if (account != null && account.getBalance() > 0) {
+                return "User cannot be deleted because the account has funds";
             }
-            return "Wrong password";
+
+            if (account != null) {
+                accountRepository.delete(account);
+            }
         }
-
-
-    }
-
-
-
-    public void deleteUsers(Integer id) {
-        Users user = usersRepository.findById(id).orElse(null);
         usersRepository.delete(user);
+        return "User deleted successfully";
 
     }
 
 
-//    public String updateUser(String userName, String data, char updateOption) {
-//
-//        Users user = usersRepository.findByUserName(userName);
-//
-//        if (updateOption == '2') {
-//            data = Utils.hashSha(data);
-//            user.setPassowordHash(data);
-//
-//        }
-//
-//        if (updateOption == '3') {
-//            String[] permissions = data.split(",");
-//
-//
-//            for (String permiso : permissions) {
-//                permiso = permiso.trim();
-//
-//
-//                try {
-//                    Permissions permissions1 = Permissions.valueOf(permiso);
-//
-//                    user.addPermission(permissions1);
-//
-//                } catch (IllegalArgumentException error) {
-//                    return "Invalid permission: " + permiso;
-//
-//                }
-//            }
-//        }
-//        usersRepository.save(user);
-//        return "Account modified successfully";
-//    }
-
-    public  void updateUser(Integer id, Users users){
-
+    public String updateUser(Integer id, Users users){
         Users user = usersRepository.findById(id).orElse(null);
 
-        if (user==null){
-            return;
+        if (user == null) {
+            return "User doesn't exist";
         }
+
+
 
         user.setUserName(users.getUserName());
         user.setPassowordHash(Utils.hashSha(users.getPassowordHash()));
@@ -133,6 +71,7 @@ public class UserServices {
         user.setRole(users.getRole());
 
         usersRepository.save(user);
+        return "User updated successfully";
 
 
     }

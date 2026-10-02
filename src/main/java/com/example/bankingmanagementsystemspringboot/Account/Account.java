@@ -1,6 +1,7 @@
 package com.example.bankingmanagementsystemspringboot.Account;
 
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -8,7 +9,7 @@ import jakarta.persistence.Id;
 
 import java.util.Objects;
 
-
+@JsonPropertyOrder({"id", "accountNumber", "pinHash", "fullName", "phone", "balance"})
 @Entity
 public class Account {
 
@@ -88,17 +89,16 @@ public class Account {
     }
 
 
-
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Account account = (Account) o;
-        return Double.compare(balance, account.balance) == 0 && Objects.equals(accountNumber, account.accountNumber) && Objects.equals(pinHash, account.pinHash) && Objects.equals(fullName, account.fullName) && Objects.equals(phone, account.phone);
+        return Double.compare(balance, account.balance) == 0 && Objects.equals(id, account.id) && Objects.equals(accountNumber, account.accountNumber) && Objects.equals(pinHash, account.pinHash) && Objects.equals(fullName, account.fullName) && Objects.equals(phone, account.phone);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(accountNumber, pinHash, fullName, phone, balance);
+        return Objects.hash(id, accountNumber, pinHash, fullName, phone, balance);
     }
 }
 

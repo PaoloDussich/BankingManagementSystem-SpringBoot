@@ -2,10 +2,13 @@ package com.example.bankingmanagementsystemspringboot.Transactions;
 
 
 
+import com.example.bankingmanagementsystemspringboot.Transactions.DTO.TransactionDTO;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("api/v1/transactions")
@@ -19,17 +22,16 @@ public class TransactionController {
 
 
     @PostMapping("/deposit")
-    public ResponseEntity<String> createTransaction(@RequestBody TransactionRecord transactionRecord) {
+    public ResponseEntity<String> createTransaction(@Valid  @RequestBody TransactionDTO transactionDTO) {
 
-        String result = transactionServices.createDeposit(transactionRecord);
+        return ResponseEntity.status(201).body(transactionServices.createDeposit(transactionDTO));
 
-        return ResponseEntity.status(201).body(result);
     }
 
     @PostMapping("/withdrawal")
-    public ResponseEntity<String> createWithdrawal(@RequestBody TransactionRecord transactionRecord) {
-        String result = transactionServices.createWithdrawal(transactionRecord);
-        return ResponseEntity.status(201).body(result);
+    public ResponseEntity<String> createWithdrawal(@Valid @RequestBody TransactionDTO transactionDTO) {
+
+        return ResponseEntity.status(201).body(transactionServices.createWithdrawal(transactionDTO));
     }
 
 
@@ -44,7 +46,7 @@ public class TransactionController {
 
 
     @GetMapping("/account/{accountNumber}")
-    public ResponseEntity<ArrayList<TransactionRecord>> showHistoryAboutOneAccount(@PathVariable String accountNumber) {
+    public ResponseEntity<List<TransactionRecord>> showHistoryAboutOneAccount(@PathVariable String accountNumber) {
 
         return ResponseEntity.ok(transactionServices.showHistoryAboutOneAccount(accountNumber));
     }
@@ -56,7 +58,6 @@ public class TransactionController {
 
         if (transaction == null) {
             return ResponseEntity.notFound().build();
-
         }
 
         return ResponseEntity.ok(transaction);

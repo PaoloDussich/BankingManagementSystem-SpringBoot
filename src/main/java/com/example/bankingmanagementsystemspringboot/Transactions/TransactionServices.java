@@ -3,14 +3,17 @@ package com.example.bankingmanagementsystemspringboot.Transactions;
 import com.example.bankingmanagementsystemspringboot.Account.Account;
 import com.example.bankingmanagementsystemspringboot.Account.AccountRepository;
 
+import com.example.bankingmanagementsystemspringboot.Exception.ResourceNotFoundException;
+import com.example.bankingmanagementsystemspringboot.Transactions.DTO.TransactionDTO;
 import com.example.bankingmanagementsystemspringboot.Users.Users;
 import com.example.bankingmanagementsystemspringboot.Users.UsersRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Random;
+import java.math.BigDecimal;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 
 @Service
@@ -37,14 +40,18 @@ public class TransactionServices {
         return false;
     }
 
-    private final Random random = new Random();
+
 
     public String generateTransactionId() {
 
         String transactionId;
 
         do {
-            transactionId = "TX" + random.nextInt(100000);
+
+            /* i was looking for a way to avoid duplicate transaction ids and while researching i found uuid as a way to generate unique identifiers uuid is used to generate unique transaction identifiers and prevent possible duplicates that could occur with random numbers */
+
+
+            transactionId = "TX" + UUID.randomUUID();
         } while (transactionRepository.findByTransactionId(transactionId) != null);
 
         return transactionId;
@@ -52,37 +59,39 @@ public class TransactionServices {
 
 
     @Transactional
-    public String createDeposit(TransactionRecord transactionRecord) {
+    public String createDeposit(TransactionDTO transactionDTO) {
 
-        String accountNumber = transactionRecord.getAccountNumber();
-        double amount = transactionRecord.getAmount();
+        String accountNumber = transactionDTO.getAccountNumber();
+        BigDecimal amount = transactionDTO.getAmount();
+
+
+        TransactionRecord transactionRecord = new TransactionRecord();
 
 
         if (!validateAccount(accountNumber)) {
-            return "Account does not exist";
+                throw new ResourceNotFoundException("Account does not exist");
         }
 
-        if (amount <= 0) {
-            return "The amount must be greater than 0";
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("The amount must be greater than 0");
         }
 
         Account account = accountRepository.findByAccountNumber(accountNumber);
         Users user = usersRepository.findByAccountNumber(accountNumber);
 
         if (user == null) {
-            return "User does not exist";
+                throw new ResourceNotFoundException("User does not exist");
         }
 
         if (account.credit(amount)) {
 
-            double newBalance = account.getBalance();
+            BigDecimal newBalance = account.getBalance();
 
 
             accountRepository.save(account);
 
 
             String timeStamp = java.time.LocalDateTime.now().toString();
-
             String transactionID = generateTransactionId();
 
             transactionRecord.setTransactionId(transactionID);
@@ -102,19 +111,21 @@ public class TransactionServices {
 
 
     @Transactional
-    public String createWithdrawal(TransactionRecord transactionRecord) {
+    public String createWithdrawal(TransactionDTO transactionDTO) {
 
 
-        String accountNumber = transactionRecord.getAccountNumber();
-        double amount = transactionRecord.getAmount();
+        String accountNumber = transactionDTO.getAccountNumber();
+        BigDecimal amount = transactionDTO.getAmount();
+
+        TransactionRecord transactionRecord = new TransactionRecord();
 
 
         if (!validateAccount(accountNumber)) {
-            return "Account does not exist";
+                throw new ResourceNotFoundException("Account does not exist");
 
         }
-        if (amount <= 0) {
-            return "The amount must be greater than 0";
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("The amount must be greater than 0");
 
         }
 
@@ -122,15 +133,16 @@ public class TransactionServices {
         Users user = usersRepository.findByAccountNumber(accountNumber);
 
         if (user == null) {
-            return "User does not exist";
+                throw new ResourceNotFoundException("User does not exist");
         }
 
         if (!account.debit(amount)) {
-            return "Insufficient funds";
+            throw new IllegalArgumentException("Insufficient funds");
+
 
         }
 
-        double newBalance = account.getBalance();
+        BigDecimal newBalance = account.getBalance();
         accountRepository.save(account);
 
         String transactionID = generateTransactionId();

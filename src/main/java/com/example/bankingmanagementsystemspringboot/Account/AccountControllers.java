@@ -1,6 +1,9 @@
 package com.example.bankingmanagementsystemspringboot.Account;
 
 
+import com.example.bankingmanagementsystemspringboot.Account.DTO.CreateAccountDTO;
+import com.example.bankingmanagementsystemspringboot.Account.DTO.UpdateAccountDTO;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,9 +23,12 @@ public class AccountControllers {
     }
 
     @PostMapping("/{id}")
-    public String createAccount(@PathVariable Integer id, @RequestBody Account account){
+    public String createAccount(@PathVariable Integer id, @Valid @RequestBody CreateAccountDTO account){
       return   accountServices.createAccountServices(account, id);
     }
+
+
+
 
     @GetMapping
     public ResponseEntity<ArrayList<Account>> showAccountList() {
@@ -31,15 +37,8 @@ public class AccountControllers {
 
     @GetMapping("/{accountNumber}")
     public ResponseEntity<Account> showListForAccountNumber(@PathVariable String accountNumber) {
-        Account account = accountServices.findAccount(accountNumber);
 
-        if (account == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-
-
-        return ResponseEntity.ok(account);
+        return ResponseEntity.ok(accountServices.findAccount(accountNumber));
     }
 
 
@@ -49,8 +48,8 @@ public class AccountControllers {
     }
 
     @PutMapping("/{id}")
-    public String updateAccount(@PathVariable Integer id, @RequestBody Account account){
-        return  accountServices.updateAccount(id, account);
+    public String updateAccount(@PathVariable Integer id, @RequestBody UpdateAccountDTO account){
+        return accountServices.updateAccount(id, account);
     }
 
 

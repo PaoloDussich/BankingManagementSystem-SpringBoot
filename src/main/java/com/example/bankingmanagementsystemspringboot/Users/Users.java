@@ -1,6 +1,7 @@
 
 package com.example.bankingmanagementsystemspringboot.Users;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.persistence.*;
 
@@ -9,7 +10,8 @@ import java.util.Objects;
 import java.util.Set;
 
 
-@JsonPropertyOrder({"id", "userName", "passowordHash", "role", "permissions", "accountNumber", "locked", "faildeAtemps"})@Entity
+@JsonPropertyOrder({"id", "userName", "passowordHash", "role", "permissions", "accountNumber", "locked", "faildeAtemps"})
+@Entity
 public class Users {
 
     @Id
@@ -17,12 +19,14 @@ public class Users {
     private Integer id;
 
     private String userName;
+
+    @JsonIgnore
     private String passowordHash;
 
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     private Set<Permissions> permissions = new HashSet<>();
 

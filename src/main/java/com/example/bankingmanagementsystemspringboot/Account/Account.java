@@ -1,12 +1,14 @@
 package com.example.bankingmanagementsystemspringboot.Account;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
 @JsonPropertyOrder({"id", "accountNumber", "pinHash", "fullName", "phone", "balance"})
@@ -17,10 +19,12 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String accountNumber;
+
+    @JsonIgnore
     private String pinHash;
     private String fullName;
     private String phone;
-    private double balance;
+    private BigDecimal balance;
 
 
     public Account(){
@@ -63,28 +67,32 @@ public class Account {
         this.phone = phone;
     }
 
-    public double getBalance() {
+    public BigDecimal getBalance() {
         return balance;
     }
 
-    public void setBalance(double balance) {
+    public void setBalance(BigDecimal balance) {
         this.balance = balance;
     }
 
-    public boolean credit(double amount){
-        if (amount <=0){
+
+    public boolean credit(BigDecimal amount){
+        if (amount.compareTo(BigDecimal.ZERO) <= 0){
             return false;
         }
-        balance += amount;
+        balance = balance.add(amount);
         return true;
     }
 
-    public boolean debit(double amount){
-        if(amount <= 0 || amount > balance){
+    public boolean debit(BigDecimal amount){
+
+
+
+        if(amount.compareTo(BigDecimal.ZERO) <= 0 || amount.compareTo(balance) > 0){
             return false;
         }
 
-        balance -= amount;
+        balance = balance.subtract(amount);
         return true;
     }
 
@@ -93,7 +101,7 @@ public class Account {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Account account = (Account) o;
-        return Double.compare(balance, account.balance) == 0 && Objects.equals(id, account.id) && Objects.equals(accountNumber, account.accountNumber) && Objects.equals(pinHash, account.pinHash) && Objects.equals(fullName, account.fullName) && Objects.equals(phone, account.phone);
+        return Objects.equals(id, account.id) && Objects.equals(accountNumber, account.accountNumber) && Objects.equals(pinHash, account.pinHash) && Objects.equals(fullName, account.fullName) && Objects.equals(phone, account.phone) && Objects.equals(balance, account.balance);
     }
 
     @Override

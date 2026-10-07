@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
 
@@ -21,7 +22,7 @@ public class TransferRecord {
     private String transferId;
     private String sourceAccount;
     private String targetAccount;
-    private double amount;
+    private BigDecimal amount;
     private String timeStamp;
     private String authorizedBy;
 
@@ -61,11 +62,11 @@ public class TransferRecord {
         this.targetAccount = targetAccount;
     }
 
-    public double getAmount() {
+    public BigDecimal getAmount() {
         return amount;
     }
 
-    public void setAmount(double amount) {
+    public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
 
@@ -90,7 +91,7 @@ public class TransferRecord {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         TransferRecord that = (TransferRecord) o;
-        return Double.compare(amount, that.amount) == 0 && Objects.equals(id, that.id) && Objects.equals(transferId, that.transferId) && Objects.equals(sourceAccount, that.sourceAccount) && Objects.equals(targetAccount, that.targetAccount) && Objects.equals(timeStamp, that.timeStamp) && Objects.equals(authorizedBy, that.authorizedBy);
+        return Objects.equals(id, that.id) && Objects.equals(transferId, that.transferId) && Objects.equals(sourceAccount, that.sourceAccount) && Objects.equals(targetAccount, that.targetAccount) && Objects.equals(amount, that.amount) && Objects.equals(timeStamp, that.timeStamp) && Objects.equals(authorizedBy, that.authorizedBy);
     }
 
     @Override

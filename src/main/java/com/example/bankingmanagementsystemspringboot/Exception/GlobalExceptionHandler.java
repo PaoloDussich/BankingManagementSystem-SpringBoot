@@ -1,6 +1,7 @@
 package com.example.bankingmanagementsystemspringboot.Exception;
 
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -27,5 +28,27 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(401).body(exception.getMessage());
     }
 
+    @ExceptionHandler(IdempotencyConflictException.class)
+        public ResponseEntity<String> handleIdempotencyConflict(IdempotencyConflictException exception) {
 
-}
+            return ResponseEntity.status(409).body(exception.getMessage());
+        }
+
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<String> handleDataIntegrityViolation(DataIntegrityViolationException exception) {
+
+        return ResponseEntity.status(409).body("A database conflict occurred. Please retry the request with the same Idempotency-Key");
+    }
+
+
+    @ExceptionHandler(UnsupportedOperationException.class)
+    public ResponseEntity<String> handleUnsupportedOperation(
+            UnsupportedOperationException exception) {
+
+        return ResponseEntity.status(501).body(exception.getMessage());
+    }
+
+    }
+
+

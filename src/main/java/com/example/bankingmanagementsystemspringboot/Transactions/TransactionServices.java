@@ -83,7 +83,7 @@ public class TransactionServices {
                 throw new ResourceNotFoundException("User does not exist");
         }
 
-        if (account.credit(amount)) {
+        account.credit(amount);
 
             BigDecimal newBalance = account.getBalance();
 
@@ -105,8 +105,7 @@ public class TransactionServices {
             transactionRepository.save(transactionRecord);
 
             return "Deposit completed successfully";
-        }
-        return "Deposit could not be completed";
+
     }
 
 
@@ -136,11 +135,8 @@ public class TransactionServices {
                 throw new ResourceNotFoundException("User does not exist");
         }
 
-        if (!account.debit(amount)) {
-            throw new IllegalArgumentException("Insufficient funds");
+        account.debit(amount);
 
-
-        }
 
         BigDecimal newBalance = account.getBalance();
         accountRepository.save(account);

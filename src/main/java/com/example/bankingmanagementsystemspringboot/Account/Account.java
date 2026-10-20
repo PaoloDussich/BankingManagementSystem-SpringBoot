@@ -27,11 +27,11 @@ public class Account {
     private BigDecimal balance;
 
 
-    public Account(){
+    public Account() {
 
     }
 
-    public Integer getId(){
+    public Integer getId() {
         return id;
     }
 
@@ -76,24 +76,36 @@ public class Account {
     }
 
 
-    public boolean credit(BigDecimal amount){
-        if (amount.compareTo(BigDecimal.ZERO) <= 0){
-            return false;
+    public void credit(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+
+            throw new IllegalArgumentException("The amount must be greater than 0");
+        }
+
+        if (balance == null) {
+
+            throw new IllegalStateException("The account balance is not initialized");
+
         }
         balance = balance.add(amount);
-        return true;
     }
 
-    public boolean debit(BigDecimal amount){
 
+    public void debit(BigDecimal amount) {
 
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("The amount must be greater than 0");
+        }
 
-        if(amount.compareTo(BigDecimal.ZERO) <= 0 || amount.compareTo(balance) > 0){
-            return false;
+        if (balance == null) {
+            throw new IllegalStateException("The account balance is not initialized");
+        }
+
+        if (amount.compareTo(balance) > 0) {
+            throw new IllegalArgumentException("Insufficient funds");
         }
 
         balance = balance.subtract(amount);
-        return true;
     }
 
 

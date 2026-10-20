@@ -1,15 +1,20 @@
 package com.example.bankingmanagementsystemspringboot.Transfers.TransferDTO;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
 public class TransferDTO {
 
-    @NotBlank
     private String sourceAccount;
     @NotBlank
     private  String targetAccount;
+
+    @NotNull(message = "Amount is required")
+    @DecimalMin(value = "0.00", inclusive = false, message = "The amount must be greater than 0")
     private BigDecimal amount;
 
     public BigDecimal getAmount() {

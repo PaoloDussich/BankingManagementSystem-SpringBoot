@@ -4,13 +4,17 @@ package com.example.bankingmanagementsystemspringboot.Transfers;
 import com.example.bankingmanagementsystemspringboot.Account.Account;
 import com.example.bankingmanagementsystemspringboot.Account.AccountRepository;
 
+import com.example.bankingmanagementsystemspringboot.Exception.IdempotencyConflictException;
 import com.example.bankingmanagementsystemspringboot.Exception.ResourceNotFoundException;
+import com.example.bankingmanagementsystemspringboot.Exception.UnsupportedOperationException;
 import com.example.bankingmanagementsystemspringboot.Transactions.TransactionRecord;
 import com.example.bankingmanagementsystemspringboot.Transactions.TransactionRepository;
 import com.example.bankingmanagementsystemspringboot.Transactions.TransactionServices;
 import com.example.bankingmanagementsystemspringboot.Transfers.TransferDTO.TransferDTO;
 import com.example.bankingmanagementsystemspringboot.Users.Users;
 import com.example.bankingmanagementsystemspringboot.Users.UsersRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,18 +31,26 @@ public class TransferServices {
     private final TransactionRepository transactionRepository;
     private final UsersRepository usersRepository;
     private final AccountRepository accountRepository;
+    private final IbanValidationService ibanValidationService;
+    @PersistenceContext
+    private EntityManager entityManager;
 
 
-    public TransferServices(TransactionServices transactionServices, TransferRepository transferRepository, AccountRepository accountRepository, TransactionRepository transactionRepository, UsersRepository usersRepository) {
+
+    public TransferServices(TransactionServices transactionServices, TransferRepository transferRepository, AccountRepository accountRepository, TransactionRepository transactionRepository, UsersRepository usersRepository, IbanValidationService ibanValidationService, EntityManager entityManager) {
 
         this.transactionServices = transactionServices;
         this.transferRepository = transferRepository;
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.usersRepository = usersRepository;
+        this.ibanValidationService = ibanValidationService;
+        this.entityManager = entityManager;
+
 
 
     }
+
 
     private final Random random = new Random();
 
@@ -53,102 +65,146 @@ public class TransferServices {
         return transferId;
     }
 
+
     @Transactional
-    public String createTransfer(TransferDTO transferDTO) {
+    public String createTransfer(TransferDTO transferDTO, String idempotencyKey) {
+
+        if (transferDTO == null) {
+
+            throw new IllegalArgumentException("Transfer data is required");
+        }
 
 
-        TransferRecord transferRecord = new TransferRecord();
 
-        if (!transactionServices.validateAccount(transferDTO.getSourceAccount())) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new IllegalArgumentException("Idempotency-Key header is required");
+
+        }
+
+
+
+        String sourceAccount = transferDTO.getSourceAccount();
+        String targetAccount = transferDTO.getTargetAccount();
+        BigDecimal amount = transferDTO.getAmount();
+
+
+
+        if (sourceAccount == null || sourceAccount.isBlank()) {
+
+            throw new IllegalArgumentException("Source account is required");
+        }
+
+        if (targetAccount == null || targetAccount.isBlank()) {
+
+            throw new IllegalArgumentException("Target account is required");
+        }
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+
+            throw new IllegalArgumentException("The amount must be greater than 0");
+        }
+
+        if (sourceAccount.equals(targetAccount)) {
+
+            throw new IllegalArgumentException("You cannot transfer to the same account");
+        }
+
+        entityManager.createNativeQuery("SELECT pg_advisory_xact_lock(hashtext(:key)::bigint)").setParameter("key", idempotencyKey).getSingleResult();
+
+
+        TransferRecord existingTransfer = transferRepository.findByIdempotencyKey(idempotencyKey);
+
+        if (existingTransfer != null) {
+            boolean sameRequest = existingTransfer.getSourceAccount().equals(transferDTO.getSourceAccount())  && existingTransfer.getTargetAccount().equals(transferDTO.getTargetAccount())  && existingTransfer.getAmount().compareTo(transferDTO.getAmount()) == 0;
+
+            if (!sameRequest) {
+                throw new IdempotencyConflictException("This Idempotency-Key was already used for a different transfer");
+
+            }
+
+            return "Transfer already processed. Transfer ID: "  + existingTransfer.getTransferId();
+        }
+
+        Account accountOrigin = accountRepository.findByAccountNumber(sourceAccount);
+
+
+        if (accountOrigin == null) {
             throw new ResourceNotFoundException("Source account does not exist");
 
         }
 
-        if (!transactionServices.validateAccount(transferDTO.getTargetAccount())) {
-            throw new ResourceNotFoundException("Target account does not exist");
 
+     Account accountDestiny;
+
+        if (ibanValidationService.isValidIban(targetAccount)){
+            throw new UnsupportedOperationException("International transfers are not supported yet");
+
+        }else if(targetAccount.matches("ACC[A-Za-z0-9]+")){
+            accountDestiny = accountRepository.findByAccountNumber(targetAccount);
+
+            if (accountDestiny == null){
+                throw new ResourceNotFoundException("Target account does not exist");
+            }
+
+        }else {
+            throw new IllegalArgumentException("Destiny must be a valid Iban or local account number");
         }
 
-        Users user = usersRepository.findByAccountNumber(transferDTO.getSourceAccount());
 
+
+        Users user = usersRepository.findByAccountNumber(sourceAccount);
 
         if (user == null) {
+
             throw new ResourceNotFoundException("User does not exist");
-
         }
 
-        Account accountOrigin = accountRepository.findByAccountNumber(transferDTO.getSourceAccount());
-        Account accountDestiny = accountRepository.findByAccountNumber(transferDTO.getTargetAccount());
 
-        if (transferDTO.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("The amount must be greater than 0");
+        accountOrigin.debit(amount);
+        accountDestiny.credit(amount);
 
-        } else if (transferDTO.getSourceAccount().equals(transferDTO.getTargetAccount())) {
+        BigDecimal sourceBalance = accountOrigin.getBalance();
+        BigDecimal targetBalance = accountDestiny.getBalance();
 
-            throw new IllegalArgumentException("You cannot transfer to the same account");
+        accountRepository.save(accountOrigin);
+        accountRepository.save(accountDestiny);
 
-        } else if (!accountOrigin.debit(transferDTO.getAmount())) {
+        String timeStamp = java.time.LocalDateTime.now().toString();
+        String transferId = generateTransferId();
 
-            throw new IllegalArgumentException("Insufficient funds");
+        TransactionRecord transactionRecordOrigin = new TransactionRecord();
+        TransactionRecord transactionRecordDestiny = new TransactionRecord();
 
-        } else {
+        transactionRecordOrigin.setTransactionId(transactionServices.generateTransactionId());
+        transactionRecordOrigin.setAccountNumber(sourceAccount);
+        transactionRecordOrigin.setAmount(amount);
+        transactionRecordOrigin.setResultingBalance(sourceBalance);
+        transactionRecordOrigin.setExecutedBy(user.getUserName());
+        transactionRecordOrigin.setType("TRANSFER_OUT");
+        transactionRecordOrigin.settImeStamp(timeStamp);
 
+        transactionRecordDestiny.setTransactionId(transactionServices.generateTransactionId());
+        transactionRecordDestiny.setAccountNumber(targetAccount);
+        transactionRecordDestiny.setAmount(amount);
+        transactionRecordDestiny.setResultingBalance(targetBalance);
+        transactionRecordDestiny.setExecutedBy(user.getUserName());
+        transactionRecordDestiny.setType("TRANSFER_IN");
+        transactionRecordDestiny.settImeStamp(timeStamp);
 
-            accountDestiny.credit(transferDTO.getAmount());
+        TransferRecord transferRecord = new TransferRecord();
+        transferRecord.setTransferId(transferId);
+        transferRecord.setSourceAccount(sourceAccount);
+        transferRecord.setTargetAccount(targetAccount);
+        transferRecord.setAmount(amount);
+        transferRecord.setTimeStamp(timeStamp);
+        transferRecord.setAuthorizedBy(user.getUserName());
+        transferRecord.setIdempotencyKey(idempotencyKey);
 
-            BigDecimal sourceBalance = accountOrigin.getBalance();
-            BigDecimal targetBalance = accountDestiny.getBalance();
+        transactionRepository.save(transactionRecordOrigin);
+        transactionRepository.save(transactionRecordDestiny);
+        transferRepository.saveAndFlush(transferRecord);
 
-
-            accountRepository.save(accountOrigin);
-            accountRepository.save(accountDestiny);
-
-            TransactionRecord transactionRecordOrigin = new TransactionRecord();
-            TransactionRecord transactionRecordDestiny = new TransactionRecord();
-
-            String transactionIdOrigin = transactionServices.generateTransactionId();
-            String transactionIdDestiny = transactionServices.generateTransactionId();
-
-            String timeStamp = java.time.LocalDate.now().toString();
-            String transferId = generateTransferId();
-
-
-            transactionRecordOrigin.setTransactionId(transactionIdOrigin);
-            transactionRecordOrigin.setAccountNumber(transferDTO.getSourceAccount());
-            transactionRecordOrigin.setAmount(transferDTO.getAmount());
-            transactionRecordOrigin.setResultingBalance(sourceBalance);
-            transactionRecordOrigin.setExecutedBy(user.getUserName());
-            transactionRecordOrigin.setType("TRANSFER_OUT");
-            transactionRecordOrigin.settImeStamp(timeStamp);
-
-
-            transactionRecordDestiny.setTransactionId(transactionIdDestiny);
-            transactionRecordDestiny.setAccountNumber(transferDTO.getTargetAccount());
-            transactionRecordDestiny.setAmount(transferDTO.getAmount());
-            transactionRecordDestiny.setResultingBalance(targetBalance);
-            transactionRecordDestiny.setExecutedBy(user.getUserName());
-            transactionRecordDestiny.setType("TRANSFER_IN");
-            transactionRecordDestiny.settImeStamp(timeStamp);
-
-
-            transferRecord.setTransferId(transferId);
-            transferRecord.setSourceAccount(transferDTO.getSourceAccount());
-            transferRecord.setTargetAccount(transferDTO.getTargetAccount());
-            transferRecord.setAmount(transferDTO.getAmount());
-            transferRecord.setTimeStamp(timeStamp);
-            transferRecord.setAuthorizedBy(user.getUserName());
-
-// save account transactions
-            transactionRepository.save(transactionRecordDestiny);
-            transactionRepository.save(transactionRecordOrigin);
-
-// save the transfer record
-            transferRepository.save(transferRecord);
-
-            return "Transfer completed successfully";
-
-
-        }
+        return "Transfer completed successfully";
     }
 
 
@@ -162,8 +218,9 @@ public class TransferServices {
     }
 
     public ArrayList<TransferRecord> showHistoryAboutOneAccount(String accountNumber) {
-        return new ArrayList<>(transferRepository.findBySourceAccountOrTargetAccount(accountNumber, accountNumber)
-        );
+
+        return new ArrayList<>(transferRepository.findBySourceAccountOrTargetAccount(accountNumber, accountNumber));
+
     }
 
 

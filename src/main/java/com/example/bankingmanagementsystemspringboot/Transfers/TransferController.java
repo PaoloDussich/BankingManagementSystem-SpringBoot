@@ -22,51 +22,110 @@ public class TransferController {
         this.transferServices = transferServices;
     }
 
-    @PostMapping
-    public ResponseEntity<String> createTransfer(@Valid @RequestBody TransferDTO transferDTO, HttpSession session) {
 
+
+    @PostMapping
+    public ResponseEntity<String> createTransfer(@Valid @RequestBody TransferDTO transferDTO, @RequestHeader("Idempotency-Key") String idempotencyKey, HttpSession session) {
         Users users = (Users) session.getAttribute("User");
 
-        if (users != null){
-            if (users.hasPermission(Permissions.TRANSFER)&& users.getAccountNumber().equals(transferDTO.getSourceAccount())){
-
-                return ResponseEntity.status(201).body(transferServices.createTransfer(transferDTO));
-
-            }
-            return ResponseEntity.status(403).body("User haven't permission for do it this transaction");
+        if (users == null){
+            return  ResponseEntity.status(401).body("User isn't logged in");
 
         }
-        return ResponseEntity.status(401).body("User isn't logged in");
+
+        if (!users.hasPermission(Permissions.TRANSFER)){
+            return ResponseEntity.status(403).body("User doesn't have permission to make transfers");
+        }
+
+        if (users.getAccountNumber() == null) {
+            return ResponseEntity.badRequest().body("The authenticated user doesn't have an account");
+        }
+
+        transferDTO.setSourceAccount(users.getAccountNumber());
+        String result = transferServices.createTransfer(transferDTO,idempotencyKey);
+
+        return ResponseEntity.status(result.startsWith("Transfer already processed")?200:201).body(result);
 
     }
 
+
     @GetMapping
-    public ResponseEntity<ArrayList<TransferRecord>> showHistory() {
+    public ResponseEntity<?> showHistory(HttpSession session) {
+        Users user = (Users) session.getAttribute("User");
 
-        return ResponseEntity.ok(transferServices.showHistory());
+        if (user == null) {
+
+            return ResponseEntity.status(401).body("User isn't logged in");
+        }
+
+        if (!user.hasPermission(Permissions.VIEW_TRANSFERS)) {
+
+            return ResponseEntity.status(403).body("Permission denied");
 
 
+        }
+
+        return ResponseEntity.ok(transferServices.showHistoryAboutOneAccount(user.getAccountNumber()));
     }
 
     @GetMapping("/account/{accountNumber}")
-    public ResponseEntity<ArrayList<TransferRecord>> showHistoryAboutOneAccount(@PathVariable String accountNumber) {
+    public ResponseEntity<?> showHistoryAboutOneAccount(
+            @PathVariable String accountNumber, HttpSession session) {
+
+        Users user = (Users) session.getAttribute("User");
+
+        if (user == null) {
+            return ResponseEntity.status(401).body("User isn't logged in");
+        }
+
+        if (!user.hasPermission(Permissions.VIEW_TRANSFERS)) {
+
+            return ResponseEntity.status(403).body("Permission denied");
+        }
+
+        if (!user.getAccountNumber().equals(accountNumber)) {
+            return ResponseEntity.status(403).body("You cannot view another user's transfers");
+        }
 
         return ResponseEntity.ok(transferServices.showHistoryAboutOneAccount(accountNumber));
     }
 
+
+
     @GetMapping("/{transferId}")
-    public ResponseEntity<TransferRecord> findTransaction(@PathVariable String transferId) {
+    public ResponseEntity<?> findTransaction(
+            @PathVariable String transferId, HttpSession session) {
+
+        Users user = (Users) session.getAttribute("User");
+
+        if (user == null) {
+            return ResponseEntity.status(401).body("User isn't logged in");
+
+        }
+
+
+
+        if (!user.hasPermission(Permissions.VIEW_TRANSFERS)) {
+            return ResponseEntity.status(403).body("Permission denied");
+        }
 
         TransferRecord transfer = transferServices.findTransaction(transferId);
 
         if (transfer == null) {
-
             return ResponseEntity.notFound().build();
+
         }
 
+        boolean ownsSource = user.getAccountNumber() != null && user.getAccountNumber().equals(transfer.getSourceAccount());
+
+        boolean ownsTarget = user.getAccountNumber() != null && user.getAccountNumber().equals(transfer.getTargetAccount());
+
+        if (!ownsSource && !ownsTarget) {
+            return ResponseEntity.status(403).build();
+
+        }
 
         return ResponseEntity.ok(transfer);
     }
-
 
 }

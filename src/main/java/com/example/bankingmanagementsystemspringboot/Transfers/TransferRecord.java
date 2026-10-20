@@ -2,10 +2,7 @@ package com.example.bankingmanagementsystemspringboot.Transfers;
 
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -26,8 +23,20 @@ public class TransferRecord {
     private String timeStamp;
     private String authorizedBy;
 
+
+    @Column(unique = true)
+    private String idempotencyKey;
+
     public TransferRecord(){
 
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 
     public Integer getId() {
@@ -91,11 +100,11 @@ public class TransferRecord {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         TransferRecord that = (TransferRecord) o;
-        return Objects.equals(id, that.id) && Objects.equals(transferId, that.transferId) && Objects.equals(sourceAccount, that.sourceAccount) && Objects.equals(targetAccount, that.targetAccount) && Objects.equals(amount, that.amount) && Objects.equals(timeStamp, that.timeStamp) && Objects.equals(authorizedBy, that.authorizedBy);
+        return Objects.equals(id, that.id) && Objects.equals(transferId, that.transferId) && Objects.equals(sourceAccount, that.sourceAccount) && Objects.equals(targetAccount, that.targetAccount) && Objects.equals(amount, that.amount) && Objects.equals(timeStamp, that.timeStamp) && Objects.equals(authorizedBy, that.authorizedBy) && Objects.equals(idempotencyKey, that.idempotencyKey);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, transferId, sourceAccount, targetAccount, amount, timeStamp, authorizedBy);
+        return Objects.hash(id, transferId, sourceAccount, targetAccount, amount, timeStamp, authorizedBy, idempotencyKey);
     }
 }

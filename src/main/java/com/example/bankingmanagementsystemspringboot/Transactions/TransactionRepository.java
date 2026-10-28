@@ -10,4 +10,6 @@ public interface TransactionRepository extends JpaRepository<TransactionRecord, 
     TransactionRecord findByTransactionId(String transactionId);
    List<TransactionRecord> findByAccountNumber(String accountNumber);
 
+   TransactionRecord findByIdempotencyKey(String idempotency);
+
 }

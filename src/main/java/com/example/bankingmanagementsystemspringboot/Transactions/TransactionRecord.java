@@ -18,6 +18,10 @@ public class TransactionRecord {
 
     @Column(unique = true)
     private String transactionId;
+
+    @Column (unique = true)
+    private String idempotencyKey;
+
     private String accountNumber;
     private BigDecimal amount;
     private BigDecimal resultingBalance;
@@ -27,6 +31,15 @@ public class TransactionRecord {
 
     public  TransactionRecord(){
 
+    }
+
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 
     public Integer getId() {

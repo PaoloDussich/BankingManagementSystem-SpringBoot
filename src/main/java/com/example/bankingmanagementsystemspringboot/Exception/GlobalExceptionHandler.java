@@ -38,7 +38,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<String> handleDataIntegrityViolation(DataIntegrityViolationException exception) {
 
-        return ResponseEntity.status(409).body("A database conflict occurred. Please retry the request with the same Idempotency-Key");
+        return ResponseEntity.status(409).body("A database integrity conflict occurred. The operation could not be completed.");
     }
 
 

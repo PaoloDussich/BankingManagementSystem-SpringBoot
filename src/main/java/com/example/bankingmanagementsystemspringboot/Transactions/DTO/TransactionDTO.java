@@ -9,7 +9,17 @@ public class TransactionDTO {
     @NotBlank
     private String accountNumber;
     private BigDecimal amount;
+    @NotBlank
+    private String pin;
 
+
+    public String getPin() {
+        return pin;
+    }
+
+    public void setPin(String pin) {
+        this.pin = pin;
+    }
 
     public String getAccountNumber() {
         return accountNumber;

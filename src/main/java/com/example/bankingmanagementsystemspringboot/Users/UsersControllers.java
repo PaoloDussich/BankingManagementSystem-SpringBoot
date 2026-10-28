@@ -10,6 +10,15 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+
 @RestController
 @RequestMapping("api/v1/users")
 public class UsersControllers {
@@ -59,14 +68,37 @@ public class UsersControllers {
 
 
     @PostMapping("/login")
-    public String loginValidation(@Valid @RequestBody LoginDTO loginDTO, HttpSession session) {
+    public ResponseEntity<String> login(
+            @Valid @RequestBody LoginDTO loginDTO,
+            HttpSession session,
+            HttpServletRequest request,
+            HttpServletResponse response) {
 
-        Users userValidate = userServices.loginValidation(loginDTO) ;
+        Users userValidate = userServices.loginValidation(loginDTO);
 
-            session.setAttribute("User", userValidate);
-            return "Login successfully";
+        request.changeSessionId();
 
+        session.setAttribute("User", userValidate);
 
+        var authentication =
+                UsernamePasswordAuthenticationToken.authenticated(
+                        userValidate.getUserName(),
+                        null,
+                        AuthorityUtils.NO_AUTHORITIES
+                );
+
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+
+        context.setAuthentication(authentication);
+
+        SecurityContextHolder.setContext(context);
+
+        HttpSessionSecurityContextRepository repository =
+                new HttpSessionSecurityContextRepository();
+
+        repository.saveContext(context, request, response);
+
+        return ResponseEntity.ok("Login successfully");
     }
 
 

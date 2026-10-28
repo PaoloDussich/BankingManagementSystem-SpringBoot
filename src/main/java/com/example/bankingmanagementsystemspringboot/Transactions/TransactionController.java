@@ -22,16 +22,20 @@ public class TransactionController {
 
 
     @PostMapping("/deposit")
-    public ResponseEntity<String> createTransaction(@Valid  @RequestBody TransactionDTO transactionDTO) {
 
-        return ResponseEntity.status(201).body(transactionServices.createDeposit(transactionDTO));
+    public ResponseEntity<String> createTransaction(@Valid  @RequestBody TransactionDTO transactionDTO, @RequestHeader ("Idempotency-Key") String idempotencyKey) {
+
+        return ResponseEntity.status(201).body(transactionServices.createDeposit(transactionDTO, idempotencyKey));
 
     }
 
-    @PostMapping("/withdrawal")
-    public ResponseEntity<String> createWithdrawal(@Valid @RequestBody TransactionDTO transactionDTO) {
 
-        return ResponseEntity.status(201).body(transactionServices.createWithdrawal(transactionDTO));
+
+
+    @PostMapping("/withdrawal")
+    public ResponseEntity<String> createWithdrawal(@Valid @RequestBody TransactionDTO transactionDTO,  @RequestHeader ("Idempotency-Key") String idempotencyKey) {
+
+        return ResponseEntity.status(201).body(transactionServices.createWithdrawal(transactionDTO, idempotencyKey));
     }
 
 

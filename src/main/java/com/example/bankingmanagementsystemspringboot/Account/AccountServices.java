@@ -7,6 +7,7 @@ import com.example.bankingmanagementsystemspringboot.Users.Users;
 import com.example.bankingmanagementsystemspringboot.Users.UsersRepository;
 
 import com.example.bankingmanagementsystemspringboot.Utils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,7 +60,7 @@ public class AccountServices {
         return "Account created successfully";
     }
 
-@Transactional
+    @Transactional
     public Account findAccount(String accountNumber) {
 
         Account account = accountRepository.findByAccountNumber(accountNumber);
@@ -133,6 +134,19 @@ public class AccountServices {
 
         accountRepository.save(account);
         return "Account updated successfully ";
+
+    }
+
+
+    public boolean validatePIn(String accountNumber, String pinEntry) {
+
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        Account accountValidation = findAccount(accountNumber);
+
+        String pinHashAccountFinded = accountValidation.getPinHash();
+
+
+        return encoder.matches(pinEntry, pinHashAccountFinded);
 
     }
 
